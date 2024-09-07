@@ -350,7 +350,6 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
           test: test
         }), do: type |> Map.get(:coding) |> hd() |> Map.get(:code)
 
-        #ignored because has different arity
         defp fn3(nil, nil),
           do: nil
       end
@@ -359,7 +358,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
     |> to_source_files()
     |> run_check(SingleMultiLineFunctionConsistency)
     |> assert_issues(fn issues ->
-      assert Enum.count(issues) == 7
+      assert Enum.count(issues) == 11
     end)
   end
 
@@ -427,7 +426,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
     |> to_source_files()
     |> run_check(SingleMultiLineFunctionConsistency)
     |> assert_issues(fn issues ->
-      assert Enum.count(issues) == 12
+      assert Enum.count(issues) == 15
 
       assert 3 ==
                issues
@@ -442,6 +441,11 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       assert 2 ==
                issues
                |> Enum.filter(fn issue -> issue.scope == "InvalidModule3.get_type" end)
+               |> Enum.count()
+
+      assert 3 ==
+               issues
+               |> Enum.filter(fn issue -> issue.scope == "InvalidModule4.test" end)
                |> Enum.count()
 
       assert 3 ==
