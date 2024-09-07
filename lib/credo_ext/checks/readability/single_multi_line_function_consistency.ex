@@ -30,22 +30,16 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
   @doc false
   @impl Credo.Check
   def run(%SourceFile{} = source_file, params) do
-    issue_meta = IssueMeta.for(source_file, params)
-
-    source = SourceFile.source(source_file)
-    ast = SourceFile.ast(source_file)
-
-    case extract_function_definitions(ast, source) do
-      {{_, _, [_, [{_, {_, _, _}}]]}, functions} ->
-        functions
-        |> Enum.reverse()
-        |> Enum.filter(fn {_, _, type} -> type != :ignore end)
-        |> Enum.group_by(&elem(&1, 0))
-        |> Enum.to_list()
-        |> Enum.reduce([], &map_issues(&1, &2, issue_meta))
-
-      _ ->
-        []
+    with issue_meta <- IssueMeta.for(source_file, params),
+         source <- SourceFile.source(source_file),
+         ast <- SourceFile.ast(source_file),
+         {{_, _, [_, [{_, {_, _, _}}]]}, functions} <- extract_function_definitions(ast, source) do
+      functions
+      |> Enum.filter(fn {_, _, type} -> type != :ignore end)
+      |> Enum.group_by(&elem(&1, 0))
+      |> Enum.reduce([], &map_issues(&1, &2, issue_meta))
+    else
+      _ -> []
     end
   end
 
@@ -57,8 +51,18 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
     end
   end
 
+  # Check if the group of function definitions has mixed formats (single-line and multi-line)
+  defp has_mixed_format?(matches),
+    do:
+      Enum.any?(matches, fn {_name, _line_no, format} -> format == :same_line end) &&
+        Enum.any?(matches, fn {_name, _line_no, format} -> format == :next_line end)
+
   defp map_issue_for({_name, line_no, _format}, issue_meta) do
-    issue_for(line_no, issue_meta)
+    format_issue(
+      issue_meta,
+      message: "Inconsistent formatting: if one function is multi-line, all should follow the same pattern.",
+      line_no: line_no
+    )
   end
 
   # AST Traversal to extract function definitions and check their format (single-line or multi-line)
@@ -69,27 +73,9 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
     Macro.prewalk(ast, [], fn
       # Match function definitions (def or defp)
       {access, meta, [{name, _inner_meta, args}, _body]} = node, acc when access in [:def, :defp] ->
-        # Get the arity (the number of arguments)
-        arity =
-          case args == nil do
-            true -> 0
-            false -> length(args)
-          end
-
-        name_arity = "#{inspect(name)}/#{arity}"
-        function_line_number = meta[:line]
-        body_line = get_body_line(function_line_number, source_lines)
-
-        function_type =
-          cond do
-            Regex.match?(@comma_do_atom_regex, body_line) -> :same_line
-            Regex.match?(@do_atom_regex, body_line) -> :next_line
-            true -> :ignore
-          end
-
-        acc = [{name_arity, function_line_number, function_type} | acc]
-
-        {node, acc}
+        name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
+        function_type = meta[:line] |> get_body_line(source_lines) |> get_function_type()
+        {node, [{name_with_arity, meta[:line], function_type} | acc]}
 
       # If not a function definition, just continue traversal
       other, acc ->
@@ -97,31 +83,24 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
     end)
   end
 
+  defp get_args_length(nil), do: 0
+  defp get_args_length(args), do: length(args)
+
+  defp get_function_type(body_line) do
+    cond do
+      Regex.match?(@comma_do_atom_regex, body_line) -> :same_line
+      Regex.match?(@do_atom_regex, body_line) -> :next_line
+      true -> :ignore
+    end
+  end
+
   defp get_body_line(line_number, source_lines) do
     line = Enum.at(source_lines, line_number - 1)
 
-    if Regex.match?(@comma_do_atom_regex, line) ||
-         Regex.match?(@do_atom_regex, line) ||
-         Regex.match?(@do_regex, line) do
+    if Regex.match?(@comma_do_atom_regex, line) || Regex.match?(@do_atom_regex, line) || Regex.match?(@do_regex, line) do
       line
     else
       get_body_line(line_number + 1, source_lines)
     end
-  end
-
-  # Check if the group of function definitions has mixed formats (single-line and multi-line)
-  defp has_mixed_format?(matches) do
-    do_next_line = Enum.any?(matches, fn {_name, _line_no, format} -> format == :next_line end)
-    do_same_line = Enum.any?(matches, fn {_name, _line_no, format} -> format == :same_line end)
-    do_next_line and do_same_line
-  end
-
-  defp issue_for(line_no, issue_meta) do
-    format_issue(
-      issue_meta,
-      message:
-        "Inconsistent formatting: if one function is multi-line, all should follow the same pattern.",
-      line_no: line_no
-    )
   end
 end
