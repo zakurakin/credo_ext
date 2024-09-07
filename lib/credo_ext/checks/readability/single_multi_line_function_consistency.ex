@@ -33,29 +33,26 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
     with issue_meta <- IssueMeta.for(source_file, params),
          source <- SourceFile.source(source_file),
          ast <- SourceFile.ast(source_file),
-         {{_, _, [_, [{_, {_, _, _}}]]}, functions} <- extract_function_definitions(ast, source) do
-      functions
-      |> Enum.filter(fn {_, _, type} -> type != :ignore end)
-      |> Enum.group_by(&elem(&1, 0))
-      |> Enum.reduce([], &map_issues(&1, &2, issue_meta))
+         module_functions <- extract_do_atom_function_definitions(ast, source) do
+      map_issues(module_functions, issue_meta)
     else
       _ -> []
     end
   end
 
-  defp map_issues({_fn_name, matches}, acc, issue_meta) do
-    if has_mixed_format?(matches) do
-      acc ++ Enum.map(matches, &map_issue_for(&1, issue_meta))
+  # Check if the group of function definitions has mixed formats (single-line and multi-line)
+  defp same_do_atom_format?(module_functions),
+    do:
+      Enum.all?(module_functions, fn {_name, _line_no, format} -> format == :same_line end) ||
+        Enum.all?(module_functions, fn {_name, _line_no, format} -> format == :next_line end)
+
+  defp map_issues(module_functions, issue_meta) do
+    if same_do_atom_format?(module_functions) do
+      []
     else
-      acc
+      Enum.map(module_functions, &map_issue_for(&1, issue_meta))
     end
   end
-
-  # Check if the group of function definitions has mixed formats (single-line and multi-line)
-  defp has_mixed_format?(matches),
-    do:
-      Enum.any?(matches, fn {_name, _line_no, format} -> format == :same_line end) &&
-        Enum.any?(matches, fn {_name, _line_no, format} -> format == :next_line end)
 
   defp map_issue_for({_name, line_no, _format}, issue_meta) do
     format_issue(
@@ -66,21 +63,27 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
   end
 
   # AST Traversal to extract function definitions and check their format (single-line or multi-line)
-  defp extract_function_definitions(ast, source_code) do
+  defp extract_do_atom_function_definitions(ast, source_code) do
     source_lines = String.split(source_code, "\n")
 
     # Traverse the AST to extract function definitions
-    Macro.prewalk(ast, [], fn
-      # Match function definitions (def or defp)
-      {access, meta, [{name, _inner_meta, args}, _body]} = node, acc when access in [:def, :defp] ->
-        name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
-        function_type = meta[:line] |> get_body_line(source_lines) |> get_function_type()
-        {node, [{name_with_arity, meta[:line], function_type} | acc]}
+    result =
+      Macro.prewalk(ast, [], fn
+        # Match function definitions (def or defp)
+        {access, meta, [{name, _inner_meta, args}, _body]} = node, acc when access in [:def, :defp] ->
+          name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
+          function_type = meta[:line] |> get_body_line(source_lines) |> get_function_type()
+          {node, [{name_with_arity, meta[:line], function_type} | acc]}
 
-      # If not a function definition, just continue traversal
-      other, acc ->
-        {other, acc}
-    end)
+        # If not a function definition, just continue traversal
+        other, acc ->
+          {other, acc}
+      end)
+
+    case result do
+      {{_, _, [_, [{_, {_, _, _}}]]}, functions} -> Enum.filter(functions, fn {_, _, type} -> type != :ignore end)
+      _ -> []
+    end
   end
 
   defp get_args_length(nil), do: 0
