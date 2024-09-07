@@ -23,9 +23,10 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
 
   alias Credo.SourceFile
 
-  @comma_do_atom_regex ~r/\s*, do:/
-  @do_atom_regex ~r/\s*do:/
-  @do_regex ~r/\s*do/
+  @do_atom_same_line_regex ~r/, do: /
+  @do_atom_before_new_line_regex ~r/(, )?do:$/
+  @do_atom_after_new_line_regex ~r/\s*do:/
+  @do_regular_regex ~r/ do$/
 
   @doc false
   @impl Credo.Check
@@ -72,7 +73,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
         # Match function definitions (def or defp)
         {access, meta, [{name, _inner_meta, args}, _body]} = node, acc when access in [:def, :defp] ->
           name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
-          function_type = meta[:line] |> get_body_line(source_lines) |> get_function_type()
+          function_type = meta[:line] |> get_do_line(source_lines) |> get_function_type()
           {node, [{name_with_arity, meta[:line], function_type} | acc]}
 
         # If not a function definition, just continue traversal
@@ -81,29 +82,43 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistency do
       end)
 
     case result do
-      {{_, _, [_, [{_, {_, _, _}}]]}, functions} -> Enum.filter(functions, fn {_, _, type} -> type != :ignore end)
-      _ -> []
+      {{_, _, [_, [{_, {_, _, _}}]]}, functions} ->
+        Enum.filter(functions, fn {_, _, type} ->
+          type != :ignore
+        end)
+
+      _ ->
+        []
     end
   end
 
-  defp get_args_length(nil), do: 0
-  defp get_args_length(args), do: length(args)
+  defp get_args_length(nil),
+    do: 0
+
+  defp get_args_length(args),
+    do: length(args)
+
+  defp get_do_line(line_number, source_lines) do
+    line = Enum.at(source_lines, line_number - 1)
+
+    cond do
+      nil == line -> nil
+      Regex.match?(@do_atom_same_line_regex, line) -> line
+      Regex.match?(@do_atom_before_new_line_regex, line) -> line
+      Regex.match?(@do_atom_after_new_line_regex, line) -> line
+      Regex.match?(@do_regular_regex, line) -> line
+      true -> get_do_line(line_number + 1, source_lines)
+    end
+  end
 
   defp get_function_type(body_line) do
     cond do
-      Regex.match?(@comma_do_atom_regex, body_line) -> :same_line
-      Regex.match?(@do_atom_regex, body_line) -> :next_line
-      true -> :ignore
-    end
-  end
-
-  defp get_body_line(line_number, source_lines) do
-    line = Enum.at(source_lines, line_number - 1)
-
-    if Regex.match?(@comma_do_atom_regex, line) || Regex.match?(@do_atom_regex, line) || Regex.match?(@do_regex, line) do
-      line
-    else
-      get_body_line(line_number + 1, source_lines)
+      body_line == nil -> :ignore
+      Regex.match?(@do_atom_same_line_regex, body_line) -> :same_line
+      Regex.match?(@do_atom_before_new_line_regex, body_line) -> :next_line
+      Regex.match?(@do_atom_after_new_line_regex, body_line) -> :next_line
+      Regex.match?(@do_regular_regex, body_line) -> :ignore
+      true -> :next_line
     end
   end
 end
