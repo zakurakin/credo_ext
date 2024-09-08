@@ -20,7 +20,7 @@ defmodule CredoExt.MixProject do
     [
       {:excoveralls, "~> 0.18", only: [:dev, :test]},
       {:credo, "~> 1.7", runtime: false},
-      {:ex_doc, "~> 0.32", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.32", runtime: false}
     ]
   end
 
