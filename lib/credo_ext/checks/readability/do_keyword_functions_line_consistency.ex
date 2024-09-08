@@ -214,8 +214,7 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
     end
   end
 
-  defp get_args_length(nil),
-    do: 0
+  defp get_args_length(nil), do: 0
 
   defp get_args_length(args), do: length(args)
 
