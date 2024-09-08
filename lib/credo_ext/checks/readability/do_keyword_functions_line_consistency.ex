@@ -178,8 +178,9 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
   defp map_issue_for({_name, line_no, _format}, issue_meta) do
     format_issue(
       issue_meta,
-      message: "Inconsistent formatting: if one function starting with `do:` keyword definition within the module spans
-        multiple lines, all similar function definitions with the same name must also be multi-line for consistency.",
+      message:
+        "Inconsistent formatting: if one function, starting with `do:` keyword definition within the module, spans " <>
+          "multiple lines, all similar function definitions with the same name must also be multi-line for consistency.",
       line_no: line_no
     )
   end
@@ -216,8 +217,7 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
   defp get_args_length(nil),
     do: 0
 
-  defp get_args_length(args),
-    do: length(args)
+  defp get_args_length(args), do: length(args)
 
   defp get_do_line(line_number, source_lines) do
     line = Enum.at(source_lines, line_number - 1)
