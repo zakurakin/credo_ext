@@ -1,6 +1,6 @@
 defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
   @moduledoc false
-#  d68364992b6c0ed927963ed78a1e5975
+  #  d68364992b6c0ed927963ed78a1e5975
   use Credo.Check,
     id: "EX31001",
     category: :readability,
