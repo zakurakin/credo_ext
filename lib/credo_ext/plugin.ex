@@ -9,7 +9,7 @@ defmodule CredoExt.Plugin do
 
   def checks do
     [
-      {CredoExt.Checks.Readability.SingleMultiLineFunctionConsistency, []}
+      {CredoExt.Checks.Readability.DoKeywordFunctionsLineConsistency, []}
     ]
   end
 end

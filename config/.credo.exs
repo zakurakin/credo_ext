@@ -182,7 +182,7 @@
            ]},
           {Credo.Check.Warning.LeakyEnvironment, []},
           {Credo.Check.Warning.MapGetUnsafePass, []},
-          {CredoExt.Check.Readability.SingleMultiLineFunctionConsistency, []}
+          {CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency, []}
         ],
         disabled: [
           #

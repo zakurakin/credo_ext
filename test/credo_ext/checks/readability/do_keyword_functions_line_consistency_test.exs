@@ -1,9 +1,9 @@
-defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
+defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
   @moduledoc false
 
   use Credo.Test.Case
 
-  alias CredoExt.Check.Readability.SingleMultiLineFunctionConsistency
+  alias CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency
 
   setup do
     {:ok, _} = Application.ensure_all_started(:credo)
@@ -30,7 +30,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> refute_issues()
   end
 
@@ -57,7 +57,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> refute_issues()
   end
 
@@ -90,7 +90,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> refute_issues()
   end
 
@@ -142,7 +142,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
       assert Enum.count(issues) == 6
 
@@ -203,7 +203,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
       assert Enum.count(issues) == 6
 
@@ -279,7 +279,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
       assert Enum.count(issues) == 7
 
@@ -292,7 +292,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
     end)
   end
 
-  test "should report code that violates the SingleMultiLineFunctionConsistency rule" do
+  test "should report code that violates the DoKeywordFunctionsLineConsistency rule" do
     [
       """
       defmodule CredoSampleModule do
@@ -356,13 +356,13 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
       assert Enum.count(issues) == 11
     end)
   end
 
-  test "should report code that violates the SingleMultiLineFunctionConsistency rule when mixing valid/invalid sources" do
+  test "should report code that violates the DoKeywordFunctionsLineConsistency rule when mixing valid/invalid sources" do
     [
       """
       defmodule InvalidModule1 do
@@ -424,7 +424,7 @@ defmodule CredoExt.Check.Readability.SingleMultiLineFunctionConsistencyTest do
       """
     ]
     |> to_source_files()
-    |> run_check(SingleMultiLineFunctionConsistency)
+    |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
       assert Enum.count(issues) == 15
 
