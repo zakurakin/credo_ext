@@ -34,7 +34,7 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: ["lib/credo_ext/checks/readability/single_multi_line_function_consistency.ex"],
+      requires: ["lib/credo_ext/checks/readability/do_keyword_functions_line_consistency.ex"],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
