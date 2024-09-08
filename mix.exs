@@ -10,8 +10,9 @@ defmodule CredoExt.MixProject do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [coveralls: :test],
       deps: deps(),
-      description: "Custom Credo checks for function formatting consistency",
-      package: package()
+      description: "A module for Custom Credo checks (extensions) in addition to the default checks.",
+      package: package(),
+      source_url: "https://github.com/zakurakin/credo_ext"
     ]
   end
 
@@ -27,7 +28,7 @@ defmodule CredoExt.MixProject do
     [
       name: "credo_ext",
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/edenlabllc/credo_ext"}
+      links: %{"GitHub" => "https://github.com/zakurakin/credo_ext"}
     ]
   end
 end

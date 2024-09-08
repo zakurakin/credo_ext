@@ -18,7 +18,7 @@ end
 
 ## Implemented Checks
 
-- `CredoExt.Check.Readability.SingleMultiLineFunctionConsistency` - This check enforces all functions with same name and arity in a module have `do: ` defined either on the same line of signature or on a new line, ignoring full-body functions (`do ... end`).
+- `CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency` - This check enforces all functions with same name and arity in a module have `do: ` defined either on the same line of signature or on a new line, ignoring full-body functions (`do ... end`).
 
 ### Examples
 <details>
@@ -147,7 +147,7 @@ Add the needed custom check into to your `.credo.exs` file:
       checks: %{
         enabled: [
           ..., # Other checks
-          {CredoExt.Check.Readability.SingleMultiLineFunctionConsistency, []}
+          {CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency, []}
         ]
       }
     }
