@@ -11,6 +11,10 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
     :ok
   end
 
+  test "plugin registers the custom check" do
+    assert CredoExt.Plugin.checks() == [{DoKeywordFunctionsLineConsistency, []}]
+  end
+
   test "should NOT report expected code" do
     [
       """
@@ -92,6 +96,40 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
     |> to_source_files()
     |> run_check(DoKeywordFunctionsLineConsistency)
     |> refute_issues()
+  end
+
+  test "should NOT report mixed formatting from different functions" do
+    [
+      """
+      defmodule CredoSampleModule do
+        defp same_line(:ok), do: :ok
+
+        defp next_line(:ok),
+          do: :ok
+      end
+      """
+    ]
+    |> to_source_files()
+    |> run_check(DoKeywordFunctionsLineConsistency)
+    |> refute_issues()
+  end
+
+  test "should report mixed formatting for guarded functions with the same arity" do
+    [
+      """
+      defmodule CredoSampleModule do
+        defp guarded(value) when is_binary(value), do: value
+
+        defp guarded(value) when is_atom(value),
+          do: value
+      end
+      """
+    ]
+    |> to_source_files()
+    |> run_check(DoKeywordFunctionsLineConsistency)
+    |> assert_issues(fn issues ->
+      assert Enum.count(issues) == 2
+    end)
   end
 
   test "should report expected code when there are functions having same time do next line and same line, ignoring full body" do
@@ -358,7 +396,7 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
     |> to_source_files()
     |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
-      assert Enum.count(issues) == 11
+      assert Enum.count(issues) == 7
     end)
   end
 
@@ -426,7 +464,7 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
     |> to_source_files()
     |> run_check(DoKeywordFunctionsLineConsistency)
     |> assert_issues(fn issues ->
-      assert Enum.count(issues) == 15
+      assert Enum.count(issues) == 12
 
       assert 3 ==
                issues
@@ -443,7 +481,7 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistencyTest do
                |> Enum.filter(fn issue -> issue.scope == "InvalidModule3.get_type" end)
                |> Enum.count()
 
-      assert 3 ==
+      assert 0 ==
                issues
                |> Enum.filter(fn issue -> issue.scope == "InvalidModule4.test" end)
                |> Enum.count()

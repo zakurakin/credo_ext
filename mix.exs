@@ -8,11 +8,16 @@ defmodule CredoExt.MixProject do
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [coveralls: :test],
       deps: deps(),
       description: "A module for Custom Credo checks (extensions) in addition to the default checks.",
       package: package(),
       source_url: "https://github.com/zakurakin/credo_ext"
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [coveralls: :test]
     ]
   end
 
