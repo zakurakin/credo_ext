@@ -147,31 +147,42 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
   alias Credo.SourceFile
 
   @do_atom_same_line_regex ~r/, do: /
-  @do_atom_before_new_line_regex ~r/(, )?do:$/
+  @do_atom_before_new_line_regex ~r/(, )?do:\s*$/
   @do_atom_after_new_line_regex ~r/\s*do:/
-  @do_regular_regex ~r/ do$/
+  @do_regular_regex ~r/\sdo\s*$/
 
   @doc """
   Run the check on the given source file.
   """
   @impl Credo.Check
   def run(%SourceFile{} = source_file, params) do
-    with issue_meta <- IssueMeta.for(source_file, params),
-         source <- SourceFile.source(source_file),
-         ast <- SourceFile.ast(source_file),
-         module_functions <- extract_do_atom_function_definitions(ast, source) do
-      map_issues(module_functions, issue_meta)
-    else
-      _ -> []
-    end
+    issue_meta = IssueMeta.for(source_file, params)
+    source = SourceFile.source(source_file)
+    ast = SourceFile.ast(source_file)
+
+    ast
+    |> extract_do_atom_function_definitions(source)
+    |> map_issues(issue_meta)
   end
 
   defp map_issues(module_functions, issue_meta) do
-    if Enum.all?(module_functions, fn {_name, _line_no, format} -> format == :same_line end) ||
-         Enum.all?(module_functions, fn {_name, _line_no, format} -> format == :next_line end) do
-      []
+    module_functions
+    |> Enum.group_by(fn {name, _line_no, _format} -> name end)
+    |> Enum.flat_map(fn {_name, functions} ->
+      map_inconsistent_issues(functions, issue_meta)
+    end)
+  end
+
+  defp map_inconsistent_issues(functions, issue_meta) do
+    formats =
+      functions
+      |> Enum.map(fn {_name, _line_no, format} -> format end)
+      |> MapSet.new()
+
+    if MapSet.size(formats) > 1 do
+      Enum.map(functions, &map_issue_for(&1, issue_meta))
     else
-      Enum.map(module_functions, &map_issue_for(&1, issue_meta))
+      []
     end
   end
 
@@ -190,33 +201,45 @@ defmodule CredoExt.Check.Readability.DoKeywordFunctionsLineConsistency do
     source_lines = String.split(source_code, "\n")
 
     # Traverse the AST to extract function definitions
-    result =
+    {_ast, functions} =
       Macro.prewalk(ast, [], fn
         # Match function definitions (def or defp)
-        {access, meta, [{name, _inner_meta, args}, _body]} = node, acc when access in [:def, :defp] ->
-          name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
-          function_type = meta[:line] |> get_do_line(source_lines) |> get_function_type()
-          {node, [{name_with_arity, meta[:line], function_type} | acc]}
+        {access, meta, [head, _body]} = node, acc when access in [:def, :defp] ->
+          case function_head(head) do
+            {name, args} ->
+              name_with_arity = "#{inspect(name)}/#{get_args_length(args)}"
+              function_type = meta[:line] |> get_do_line(source_lines) |> get_function_type()
+              {node, [{name_with_arity, meta[:line], function_type} | acc]}
+
+            :error ->
+              {node, acc}
+          end
 
         # If not a function definition, just continue traversal
         other, acc ->
           {other, acc}
       end)
 
-    case result do
-      {{_, _, [_, [{_, {_, _, _}}]]}, functions} ->
-        Enum.filter(functions, fn {_, _, type} ->
-          type != :ignore
-        end)
-
-      _ ->
-        []
-    end
+    functions
+    |> Enum.reverse()
+    |> Enum.filter(fn {_name, _line_no, type} -> type != :ignore end)
   end
+
+  defp function_head({:when, _meta, [head | _guards]}), do: function_head(head)
+
+  defp function_head({name, _meta, nil}) when is_atom(name), do: {name, []}
+
+  defp function_head({name, _meta, args}) when is_atom(name) and is_list(args), do: {name, args}
+
+  defp function_head(_head), do: :error
 
   defp get_args_length(nil), do: 0
 
-  defp get_args_length(args), do: length(args)
+  defp get_args_length(args) when is_list(args), do: length(args)
+
+  defp get_args_length(_args) do
+    0
+  end
 
   defp get_do_line(line_number, source_lines) do
     line = Enum.at(source_lines, line_number - 1)

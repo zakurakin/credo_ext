@@ -11,7 +11,7 @@ by adding `credo_ext` along with `credo` to your list of dependencies in `mix.ex
 def deps do
   [
     {:credo, "~> 1.7", runtime: false},
-    {:credo_ext, "~> 0.1.0"}
+    {:credo_ext, "~> 0.1.2"}
   ]
 end
 ```
